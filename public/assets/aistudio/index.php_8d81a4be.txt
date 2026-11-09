@@ -1,0 +1,465 @@
+?page=class">Class Routine</a>
+    <a href="index.php?page=exam">Exam Routine</a>
+    <a href="index.php?page=apply">Application</a>
+
+    <?php if (isAdmin()): ?>
+        <a href="index.php?page=admin">Admin Panel</a>
+    <?php endif; ?>
+
+    <a href="index.php?logout=1">Logout</a>
+
+<?php else: ?>
+
+    <a href="index.php">Login</a>
+
+<?php endif; ?>
+
+</nav>
+
+<div class="container">
+
+<?php if (isset($_GET['success'])): ?>
+    <p class="success"><?php echo e($_GET['success']); ?></p>
+<?php endif; ?>
+
+<?php if (isset($error)): ?>
+    <p class="error"><?php echo e($error); ?></p>
+<?php endif; ?>
+
+<?php if (!loggedIn()): ?>
+
+    <div class="card">
+        <h2>Student / Admin Login</h2>
+
+        <form method="POST">
+
+            <label>Student ID / Admin ID</label>
+            <input type="text" name="student_id" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <button type="submit" name="login">Login</button>
+
+        </form>
+
+        <p><b>Admin ID:</b> admin</p>
+        <p><b>Admin Password:</b> admin123</p>
+
+        <p><b>Student ID:</b> 2026001</p>
+        <p><b>Student Password:</b> student123</p>
+    </div>
+
+<?php else: ?>
+
+    <?php if ($page == 'home'): ?>
+
+        <div class="card">
+            <h2>Welcome, <?php echo e($_SESSION['user']['name']); ?>!</h2>
+
+            <p>Welcome to University Information & Application System.</p>
+
+            <p><b>User ID:</b>
+            <?php echo e($_SESSION['user']['student_id']); ?></p>
+
+            <p><b>Role:</b>
+            <?php echo e($_SESSION['user']['role']); ?></p>
+        </div>
+
+        <div class="card">
+            <h2>Available Services</h2>
+
+            <p>1. Official University Notices</p>
+            <p>2. Class Routine</p>
+            <p>3. Exam Routine</p>
+            <p>4. Online Application</p>
+            <p>5. Application Status</p>
+
+            <?php if (isAdmin()): ?>
+                <p>6. Admin Management Panel</p>
+                <p>7. Delete Notices and Routines</p>
+            <?php endif; ?>
+        </div>
+
+    <?php elseif ($page == 'notice'): ?>
+
+        <div class="card">
+            <h2>Official University Notices</h2>
+
+            <?php if (isAdmin()): ?>
+
+                <h3>Publish New Notice</h3>
+
+                <form method="POST">
+
+                    <label>Notice Title</label>
+                    <input type="text" name="title" required>
+
+                    <label>Notice Details</label>
+                    <textarea name="body" rows="4" required></textarea>
+
+                    <button type="submit" name="add_notice">
+                        Publish Notice
+                    </button>
+
+                </form>
+
+            <?php endif; ?>
+
+            <hr>
+
+            <?php
+            $rows = $pdo->query(
+                "SELECT * FROM notices ORDER BY id DESC"
+            )->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($rows):
+                foreach ($rows as $r):
+            ?>
+
+                <h3><?php echo e($r['title']); ?></h3>
+
+                <p><?php echo nl2br(e($r['body'])); ?></p>
+
+                <small>
+                    Published:
+                    <?php echo e($r['created_at']); ?>
+                </small>
+
+                <?php if (isAdmin()): ?>
+
+                    <form method="POST"
+                    onsubmit="return confirm('Are you sure you want to delete this notice?');">
+
+                        <input type="hidden"
+                        name="notice_id"
+                        value="<?php echo (int)$r['id']; ?>">
+
+                        <button type="submit"
+                        name="delete_notice"
+                        class="delete-btn">
+                            Delete Notice
+                        </button>
+
+                    </form>
+
+                <?php endif; ?>
+
+                <hr>
+
+            <?php
+                endforeach;
+            else:
+                echo "<p>No notices available.</p>";
+            endif;
+            ?>
+
+        </div>
+
+    <?php elseif ($page == 'class' || $page == 'exam'): ?>
+
+        <?php
+        $type = ($page == 'exam') ? 'Exam' : 'Class';
+
+        $stmt = $pdo->prepare(
+            "SELECT * FROM routines WHERE type=? ORDER BY id DESC"
+        );
+
+        $stmt->execute([$type]);
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        ?>
+
+        <div class="card">
+
+            <h2><?php echo e($type); ?> Routine</h2>
+
+            <?php if (isAdmin()): ?>
+
+                <h3>Add New <?php echo e($type); ?> Routine</h3>
+
+                <form method="POST">
+
+                    <input type="hidden"
+                    name="type"
+                    value="<?php echo e($type); ?>">
+
+                    <label>Department</label>
+                    <input type="text" name="department" required>
+
+                    <label>Semester</label>
+                    <input type="text" name="semester" required>
+
+                    <label>Day / Date</label>
+                    <input type="text" name="day_date" required>
+
+                    <label>Time</label>
+                    <input type="text" name="time_text" required>
+
+                    <label>Course</label>
+                    <input type="text" name="course" required>
+
+                    <button type="submit" name="add_routine">
+                        Add Routine
+                    </button>
+
+                </form>
+
+            <?php endif; ?>
+
+            <h3>Routine List</h3>
+
+            <table>
+
+                <tr>
+                    <th>Department</th>
+                    <th>Semester</th>
+                    <th>Day / Date</th>
+                    <th>Time</th>
+                    <th>Course</th>
+
+                    <?php if (isAdmin()): ?>
+                        <th>Action</th>
+                    <?php endif; ?>
+                </tr>
+
+                <?php if ($rows): ?>
+
+                    <?php foreach ($rows as $r): ?>
+
+                        <tr>
+
+                            <td><?php echo e($r['department']); ?></td>
+
+                            <td><?php echo e($r['semester']); ?></td>
+
+                            <td><?php echo e($r['day_date']); ?></td>
+
+                            <td><?php echo e($r['time_text']); ?></td>
+
+                            <td><?php echo e($r['course']); ?></td>
+
+                            <?php if (isAdmin()): ?>
+
+                                <td>
+
+                                    <form method="POST"
+                                    onsubmit="return confirm('Delete this routine?');">
+
+                                        <input type="hidden"
+                                        name="routine_id"
+                                        value="<?php echo (int)$r['id']; ?>">
+
+                                        <input type="hidden"
+                                        name="routine_type"
+                                        value="<?php echo e($type); ?>">
+
+                                        <button type="submit"
+                                        name="delete_routine"
+                                        class="delete-btn">
+                                            Delete
+                                        </button>
+
+                                    </form>
+
+                                </td>
+
+                            <?php endif; ?>
+
+                        </tr>
+
+                    <?php endforeach; ?>
+
+                <?php else: ?>
+
+                    <tr>
+                        <td colspan="6">No routine available.</td>
+                    </tr>
+
+                <?php endif; ?>
+
+            </table>
+
+        </div>
+
+    <?php elseif ($page == 'apply'): ?>
+
+        <div class="card">
+
+            <h2>Online Application</h2>
+
+            <?php if (!isAdmin()): ?>
+
+                <form method="POST">
+
+                    <label>Application Type</label>
+
+                    <select name="app_type" required>
+                        <option value="">Select Application</option>
+                        <option value="Exam Permission">Exam Permission</option>
+                        <option value="Lost ID Card">Lost ID Card</option>
+                        <option value="Transport Fee Off">Transport Fee Off</option>
+                        <option value="Other Application">Other Application</option>
+                    </select>
+
+                    <label>Application Details</label>
+
+                    <textarea name="details"
+                    rows="5"
+                    placeholder="Write your application details..."
+                    required></textarea>
+
+                    <button type="submit" name="submit_application">
+                        Submit Application
+                    </button>
+
+                </form>
+
+            <?php endif; ?>
+
+            <hr>
+
+            <h3>My Applications</h3>
+
+            <?php
+            $stmt = $pdo->prepare("
+                SELECT * FROM applications
+                WHERE user_id=?
+                ORDER BY id DESC
+            ");
+
+            $stmt->execute([$_SESSION['user']['id']]);
+
+            $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            ?>
+
+            <?php if ($applications): ?>
+
+                <?php foreach ($applications as $app): ?>
+
+                    <div class="card">
+
+                        <h3><?php echo e($app['app_type']); ?></h3>
+
+                        <p><?php echo nl2br(e($app['details'])); ?></p>
+
+                        <p>
+                            <b>Status:</b>
+                            <?php echo e($app['status']); ?>
+                        </p>
+
+                        <small>
+                            <?php echo e($app['created_at']); ?>
+                        </small>
+
+                    </div>
+
+                <?php endforeach; ?>
+
+            <?php else: ?>
+
+                <p>You have not submitted any application yet.</p>
+
+            <?php endif; ?>
+
+        </div>
+
+    <?php elseif ($page == 'admin' && isAdmin()): ?>
+
+        <div class="card">
+
+            <h2>Admin Dashboard</h2>
+
+            <h3>All Student Applications</h3>
+
+            <?php
+            $stmt = $pdo->query("
+                SELECT applications.*, users.name, users.student_id
+                FROM applications
+                JOIN users ON applications.user_id=users.id
+                ORDER BY applications.id DESC
+            ");
+
+            $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            ?>
+
+            <?php if ($applications): ?>
+
+                <?php foreach ($applications as $app): ?>
+
+                    <div class="card">
+
+                        <h3><?php echo e($app['app_type']); ?></h3>
+
+                        <p>
+                            <b>Student:</b>
+                            <?php echo e($app['name']); ?>
+                        </p>
+
+                        <p>
+                            <b>Student ID:</b>
+                            <?php echo e($app['student_id']); ?>
+                        </p>
+
+                        <p>
+                            <b>Details:</b>
+                            <?php echo nl2br(e($app['details'])); ?>
+                        </p>
+
+                        <p>
+                            <b>Status:</b>
+                            <?php echo e($app['status']); ?>
+                        </p>
+
+                        <form method="POST">
+
+                            <input type="hidden"
+                            name="application_id"
+                            value="<?php echo (int)$app['id']; ?>">
+
+                            <select name="status" required>
+
+                                <option value="Approved">Approve</option>
+
+                                <option value="Rejected">Reject</option>
+
+                            </select>
+
+                            <button type="submit" name="review">
+                                Update Status
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                <?php endforeach; ?>
+
+            <?php else: ?>
+
+                <p>No applications submitted yet.</p>
+
+            <?php endif; ?>
+
+        </div>
+
+    <?php else: ?>
+
+        <div class="card">
+            <h2>Page Not Found</h2>
+            <p>The requested page is not available.</p>
+        </div>
+
+    <?php endif; ?>
+
+<?php endif; ?>
+
+</div>
+
+<footer>
+    <p>University Information & Application System</p>
+    <p>Developed for University Management</p>
+</footer>
+
+</body>
+</html>

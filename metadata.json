@@ -1,0 +1,8 @@
+{
+  "name": "University Information and Application System",
+  "description": "A comprehensive university portal for managing official notices, class & exam routines, and student online applications with dedicated student and administrator roles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
